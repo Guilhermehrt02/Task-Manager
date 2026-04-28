@@ -22,7 +22,7 @@ export class TasksService {
         const where: any = {
             userId
         }
-
+        console.log('where', where)
         if (completed !== undefined) {
             where.completed = completed === 'true';
         }
