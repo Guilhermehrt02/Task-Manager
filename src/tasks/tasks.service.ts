@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { last } from 'rxjs';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { QueryTaskDto } from './dto/query-task.dto';
 
 @Injectable()
 export class TasksService {
@@ -15,7 +16,7 @@ export class TasksService {
         })
     }
 
-    async findAll(userId: string, query: any) {
+    async findAll(userId: string, query: QueryTaskDto) {
         const { completed, page = 1, limit = 10 } = query;
         
         const where: any = {

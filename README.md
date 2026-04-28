@@ -68,6 +68,35 @@ $ npm install -g @nestjs/mau
 $ mau deploy
 ```
 
+## Deploy to AWS EC2 via GitHub Actions
+
+This repository includes a GitHub Actions workflow that runs tests and, on success, deploys the project to an EC2 instance via SCP + SSH using docker-compose.
+
+How it works
+- On push to the `main` branch the workflow runs tests (`npm test`).
+- If tests pass, the workflow copies the `task-manager` folder to `/home/<user>/app` on your EC2 instance and runs `docker-compose up -d --build`.
+
+Required setup on EC2
+- Install Docker and Docker Compose on the EC2 instance.
+- Ensure the deploy user (example: `ubuntu`) can run Docker commands (add to `docker` group or use sudo).
+- Create the target directory (the workflow will create it if missing): `/home/<user>/app`.
+- Add the public SSH key (corresponding to the private key you'll add to GitHub secrets) to `/home/<user>/.ssh/authorized_keys`.
+
+Required GitHub secrets
+- `EC2_HOST` — IP or hostname of your EC2 instance.
+- `EC2_USER` — username on the EC2 instance (e.g. `ubuntu`).
+- `EC2_SSH_KEY` — private SSH key (PEM) for the `EC2_USER`. Paste the private key as the secret value.
+- `EC2_SSH_PORT` — optional (defaults to `22` if unset). Add if you use a non-standard SSH port.
+
+Location of the workflow
+- The workflow file is at [.github/workflows/deploy.yml](.github/workflows/deploy.yml) and runs on pushes to `main`.
+
+Notes and troubleshooting
+- Ensure `docker-compose` is installed and available in the PATH for the deploy user.
+- If you prefer not to copy the entire repo, modify the workflow `source` parameter to transfer only required files.
+- For improved security, add the EC2 host to `known_hosts` or use GitHub's `known_hosts` secret handling; this workflow uses a direct key-based SSH connection.
+
+
 With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
 ## Resources

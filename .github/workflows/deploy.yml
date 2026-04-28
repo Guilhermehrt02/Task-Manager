@@ -1,0 +1,59 @@
+name: CI/CD - tests + deploy to EC2
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        working-directory: task-manager
+        run: npm ci
+
+      - name: Run tests
+        working-directory: task-manager
+        run: npm test
+
+  deploy:
+    name: Deploy to EC2
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Copy files to EC2 via SCP
+        uses: appleboy/scp-action@v0.1.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT }}
+          source: "task-manager/*"
+          target: "/home/${{ secrets.EC2_USER }}/app"
+
+      - name: Run remote deploy commands (docker-compose)
+        uses: appleboy/ssh-action@v0.1.5
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          port: ${{ secrets.EC2_SSH_PORT }}
+          script: |
+            set -e
+            mkdir -p /home/${{ secrets.EC2_USER }}/app
+            cd /home/${{ secrets.EC2_USER }}/app
+            docker-compose down || true
+            docker-compose up -d --build
